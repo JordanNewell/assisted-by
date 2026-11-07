@@ -1,0 +1,140 @@
+#!/bin/bash
+# commit-msg — AI-assisted contributor class hook (assisted-by)
+# https://github.com/JordanNewell/assisted-by
+#
+# Normalize AI attribution in commit messages. Companion to the position paper
+# "The Missing Contributor Class" (Jordan Newell, 2026).
+#
+# AI-attribution policy (git config, per-repo or --global):
+#   aiattr.policy = strip    (default) delete vendor AI trailers from the message.
+#                   = rewrite  delete vendor trailers, then stamp ONE conformant
+#                              trailer:
+#                                Assisted-by: <aiattr.agent>
+#                              if (and only if) the message showed AI involvement.
+#                              No Co-authored-by is ever emitted for a tool.
+#                   = off      leave the message untouched.
+#   aiattr.agent = <name>    default "assistant". Operator-chosen: a fleet agent
+#                            name, a model name, or anything. No registry, no
+#                            verification — by design.
+#
+# The class never gates: this hook transforms attribution, it never blocks a
+# commit for what it does or doesn't disclose. Malformed Assisted-by trailers
+# get a warning on stderr, never a failure.
+#
+# Spec: SPEC.md in this repository.
+
+set -euo pipefail
+
+MSG_FILE="$1"
+
+# --- AI attribution policy -------------------------------------------------
+ai_policy="$(git config aiattr.policy 2>/dev/null || true)"
+ai_policy="${ai_policy:-strip}"
+case "$ai_policy" in
+  strip|rewrite|off) ;;
+  *) echo "WARN: aiattr.policy='$ai_policy' invalid, using strip" >&2; ai_policy=strip ;;
+esac
+ai_agent="$(git config aiattr.agent 2>/dev/null || true)"
+ai_agent="${ai_agent:-assistant}"
+
+if [ "$ai_policy" != "off" ]; then
+  # Vendor AI-attribution patterns (case-insensitive). Kept ASCII-only —
+  # multibyte emoji handling in grep is unreliable across locales.
+  VENDOR_PATTERNS=(
+    'Co-Authored-By:.*Claude'
+    'Co-Authored-By:.*Copilot'
+    'Co-Authored-By:.*Cursor'
+    'Co-Authored-By:.*Gemini'
+    'Co-Authored-By:.*ChatGPT'
+    'Co-Authored-By:.*GitHub[[:space:]]Copilot'
+    'Co-Authored-By:.*anthropic'
+    'Co-Authored-By:.*noreply@anthropic\.com'
+    'Co-Authored-By:.*<AI'
+    'Co-Authored-By:.*\bAI\b'
+    'Co-Authored-By:.*ZCode'
+    'Co-Authored-By:.*Z\.ai'
+    'Co-Authored-By:.*GLM'
+    'Co-Authored-By:.*Bigmodel'
+    'Co-Authored-By:.*BigModel'
+    'Generated[[:space:]]with[[:space:]]Claude'
+    'Generated[[:space:]]with[[:space:]]Copilot'
+    'Generated[[:space:]]with[[:space:]]Cursor'
+    'Generated[[:space:]]with[[:space:]]Gemini'
+    'Generated[[:space:]]with[[:space:]]ZCode'
+    'Generated[[:space:]]with[[:space:]]GLM'
+    'Generated-with:.*Claude'
+    'AI-assisted:'
+    'Written[[:space:]]by[[:space:]]Claude'
+    'Created[[:space:]]by[[:space:]]Claude'
+    'noreply@anthropic\.com'
+    'noreply@z\.ai'
+    'noreply@github\.com.*copilot'
+  )
+  grep_args=()
+  for p in "${VENDOR_PATTERNS[@]}"; do grep_args+=(-e "$p"); done
+
+  TMP_FILE="$(mktemp)"
+  grep -ivE "${grep_args[@]}" "$MSG_FILE" 2>/dev/null > "$TMP_FILE" \
+    || cp "$MSG_FILE" "$TMP_FILE"
+
+  if [ "$ai_policy" = "rewrite" ]; then
+    saw_ai=0
+    grep -iqE "${grep_args[@]}" "$MSG_FILE" 2>/dev/null && saw_ai=1 || true
+    has_stamp=0
+    grep -qiE '^[[:space:]]*Assisted-by:' "$MSG_FILE" 2>/dev/null && has_stamp=1 || true
+
+    # Non-gating grammar validation of any Assisted-by stamp: warn on unknown
+    # mode= values, never fail. (Spec: mode=generated|edited|reviewed.)
+    if [ "$has_stamp" = 1 ]; then
+      bad_mode="$(grep -iE '^[[:space:]]*Assisted-by:.*mode=' "$MSG_FILE" 2>/dev/null \
+        | grep -ivE 'mode=(generated|edited|reviewed)' || true)"
+      if [ -n "$bad_mode" ]; then
+        echo "WARN: non-conformant Assisted-by mode= value (allowed: generated|edited|reviewed):" >&2
+        echo "  $bad_mode" >&2
+      fi
+    fi
+
+    if [ "$saw_ai" = 1 ] && [ "$has_stamp" = 0 ]; then
+      # Insert stamp after the last non-comment line (commit-msg files can
+      # carry trailing commented help text; stamps must survive git's comment
+      # stripping). Blank line before the stamp if body exists.
+      TMP_STAMP="$(mktemp)"
+      awk -v stamp="Assisted-by: $ai_agent" '
+        { lines[NR] = $0 }
+        END {
+          if (NR == 0) { print stamp; exit }
+          insert_at = NR
+          for (i = NR; i >= 1; i--) {
+            if (lines[i] !~ /^[[:space:]]*#/) { insert_at = i; break }
+          }
+          for (i = 1; i <= NR; i++) {
+            print lines[i]
+            if (i == insert_at) {
+              if (lines[i] !~ /^[[:space:]]*$/) print ""
+              print stamp
+            }
+          }
+        }
+      ' "$TMP_FILE" > "$TMP_STAMP"
+      mv "$TMP_STAMP" "$TMP_FILE"
+    fi
+  fi
+
+  # Collapse runs of 2+ blank lines into 1, strip leading + trailing blanks
+  awk '
+  BEGIN { pending_blank = 0; first = 1 }
+  /^[[:space:]]*$/ {
+      pending_blank = 1
+      next
+  }
+  {
+      if (pending_blank && !first) print ""
+      pending_blank = 0
+      first = 0
+      print
+  }
+  ' "$TMP_FILE" > "$MSG_FILE"
+  rm -f "$TMP_FILE"
+fi
+
+exit 0

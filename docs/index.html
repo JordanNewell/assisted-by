@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>assisted-by — the AI-assisted contributor class</title>
+<style>
+  :root { --ink:#1a1a1a; --muted:#666; --line:#ddd; --bg:#fff; --code:#f5f5f5; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font:16px/1.65 Georgia, "Times New Roman", serif; color:var(--ink); background:var(--bg);
+         max-width:46rem; margin:0 auto; padding:3rem 1.25rem 5rem; }
+  code, pre { font:0.92em/1.5 "SF Mono", Consolas, Menlo, monospace; }
+  code { background:var(--code); padding:0.1em 0.35em; border-radius:3px; }
+  pre { background:var(--code); padding:1rem; overflow-x:auto; border:1px solid var(--line); }
+  h1 { font-size:1.9rem; line-height:1.2; margin-bottom:0.4rem; }
+  h2 { font-size:1.25rem; margin:2.2rem 0 0.7rem; border-bottom:1px solid var(--line); padding-bottom:0.35rem; }
+  p { margin:0.9rem 0; }
+  .tag { font:0.8rem monospace; color:var(--muted); }
+  table { border-collapse:collapse; width:100%; margin:1rem 0; font-size:0.95rem; }
+  th, td { text-align:left; padding:0.5rem 0.7rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-family:monospace; font-size:0.85rem; }
+  .muted { color:var(--muted); }
+  a { color:var(--ink); }
+</style>
+</head>
+<body>
+
+<h1>assisted-by</h1>
+<p class="tag">the AI-assisted contributor class · a git commit-msg hook</p>
+
+<p>Git gives credit in three classes: <strong>author</strong>, <strong>human co-author</strong>
+(<code>Co-authored-by:</code>), and <strong>bot</strong> (<code>[bot]</code> accounts).
+AI coding agents fit none of them — so every AI-assisted commit in the world either
+masquerades as a human co-author or is stripped to nothing.</p>
+
+<p><code>assisted-by</code> implements the fourth class: a vendor-neutral, opt-in trailer
+that rewrites vendor ads into honest disclosure.</p>
+
+<pre>Before:  Co-Authored-By: Claude &lt;noreply@anthropic.com&gt;
+         🤖 Generated with Claude Code
+
+After:   Assisted-by: my-agent</pre>
+
+<h2>Grammar</h2>
+<pre>Assisted-by: &lt;agent-name&gt; [; tool=&lt;tool&gt;] [; model=&lt;model&gt;]
+           [; mode=generated|edited|reviewed] [; id=&lt;operator-local-id&gt;]</pre>
+
+<p>Everything optional. Default absent — nothing stamps itself. The class never gates.
+<code>Assisted-by: the robots</code> is fully conformant.</p>
+
+<h2>The four classes</h2>
+<table>
+<tr><th>Class</th><th>Mechanism</th><th>Renders as</th></tr>
+<tr><td>Human author</td><td>commit author field</td><td>avatar + graphs</td></tr>
+<tr><td>Human co-author</td><td><code>Co-authored-by:</code></td><td>avatar chip</td></tr>
+<tr><td>Bot</td><td><code>[bot]</code> account</td><td>bot badge</td></tr>
+<tr><td><strong>AI-assisted</strong></td><td><code>Assisted-by:</code> (this spec)</td><td>distinct — never a human avatar</td></tr>
+</table>
+
+<h2>Install</h2>
+<pre>git clone https://github.com/JordanNewell/assisted-by.git
+cd assisted-by &amp;&amp; ./install.sh --policy rewrite --agent your-agent</pre>
+
+<h2>Links</h2>
+<p>
+<a href="https://github.com/JordanNewell/assisted-by">Repository</a> ·
+<a href="https://github.com/JordanNewell/assisted-by/blob/main/SPEC.md">Specification</a> ·
+Position paper: <em>The Missing Contributor Class</em> (Zenodo, 2026) ·
+License: MIT
+</p>
+
+<p class="muted">Non-gating by design: the hook transforms attribution; it never blocks
+a commit for what it does or doesn't disclose.</p>
+
+</body>
+</html>
