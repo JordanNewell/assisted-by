@@ -19,7 +19,8 @@ Human co-authors are never touched. `Co-authored-by` is never emitted for a tool
 class never gates: the hook transforms attribution, it never blocks a commit.
 
 Companion to the position paper **"The Missing Contributor Class: A Fourth Contributor
-Taxonomy for AI-Assisted Commits"** (Jordan Newell, 2026) — DOI: _pending_.
+Taxonomy for AI-Assisted Commits"** (Jordan Newell, 2026) —
+[DOI 10.5281/zenodo.24031381](https://zenodo.org/records/24031381).
 
 **Cite this software:** DOI `10.5281/zenodo.24034440` (concept DOI — all releases) ·
 [v1.0.0 record](https://zenodo.org/records/24034441)
