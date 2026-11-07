@@ -9,6 +9,9 @@ You will receive an **acknowledgment within 72 hours**. If you do not receive
 one, assume your report did not arrive and follow up on a fresh issue (without
 sensitive details).
 
+Maintainer GPG fingerprint:
+`67567DC5 E7C5353F 85F2AF0D AC05D3F3 E0EFA32A`
+
 ## Scope
 
 This repository ships a git commit-msg hook. It processes commit message text
