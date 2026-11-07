@@ -32,7 +32,7 @@ ai_policy="$(git config aiattr.policy 2>/dev/null || true)"
 ai_policy="${ai_policy:-strip}"
 case "$ai_policy" in
   strip|rewrite|off) ;;
-  *) echo "WARN: aiattr.policy='$ai_policy' invalid, using strip" >&2; ai_policy=strip ;;
+  *) echo "WARN: aiattr.policy='$ai_policy' invalid, using strip" >&2; ai_policy="strip" ;;
 esac
 ai_agent="$(git config aiattr.agent 2>/dev/null || true)"
 ai_agent="${ai_agent:-assistant}"
