@@ -21,6 +21,9 @@ class never gates: the hook transforms attribution, it never blocks a commit.
 Companion to the position paper **"The Missing Contributor Class: A Fourth Contributor
 Taxonomy for AI-Assisted Commits"** (Jordan Newell, 2026) — DOI: _pending_.
 
+**Cite this software:** DOI `10.5281/zenodo.24034440` (concept DOI — all releases) ·
+[v1.0.0 record](https://zenodo.org/records/24034441)
+
 ## The class, in one table
 
 | Class | Mechanism | Renders as |
